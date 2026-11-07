@@ -1093,3 +1093,34 @@ input:focus, select:focus {
         padding: 23px;
     }
 }
+
+/* GRANTLY accessibility and usability refinements */
+.skip-link {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 1000;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    border: 2px solid var(--secondary);
+}
+.skip-link:focus { top: 12px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 3px solid rgba(18, 166, 140, .45);
+    outline-offset: 2px;
+}
+button:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}

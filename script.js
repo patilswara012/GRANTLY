@@ -214,6 +214,16 @@ function escapeHTML(value) {
     })[character]);
 }
 
+// Only allow secure external links. This prevents javascript: and other unsafe schemes.
+function safeExternalURL(value) {
+    try {
+        const url = new URL(String(value), window.location.origin);
+        return url.protocol === "https:" ? url.href : "";
+    } catch {
+        return "";
+    }
+}
+
 function renderFeatured() {
     const container = document.getElementById("featuredScholarships");
 
@@ -324,7 +334,7 @@ function viewDetails(id) {
             </div>
 
             <p style="margin-top:20px">
-                <a class="btn btn-primary" href="${escapeHTML(item.link)}"
+                <a class="btn btn-primary" href="${escapeHTML(safeExternalURL(item.link) || "https://scholarships.gov.in")}"
                     target="_blank" rel="noopener noreferrer">
                     Visit Scholarship Portal ↗
                 </a>
@@ -486,14 +496,15 @@ document.getElementById("eligibilityForm").addEventListener("submit", function(e
         return;
     }
 
-    const results = scholarships.map(item => {
-        const levelPoints = level === item.level ? 40 : 0;
-        const marksPoints = marks >= item.marks ? 35 : 0;
-        const incomePoints = income <= item.income ? 25 : 0;
-        const score = levelPoints + marksPoints + incomePoints;
+    if (!window.GrantlyEligibility || typeof window.GrantlyEligibility.calculate !== "function") {
+        showToast("Eligibility checker is temporarily unavailable. Please refresh the page.");
+        return;
+    }
 
-        return { ...item, score, levelPoints, marksPoints, incomePoints };
-    }).sort((a, b) => b.score - a.score);
+    const results = window.GrantlyEligibility.calculate(
+        { level, course, marks, income, category },
+        scholarships
+    );
 
     const container = document.getElementById("eligibilityResults");
 
@@ -648,11 +659,15 @@ document.getElementById("adminForm").addEventListener("submit", function(event) 
         icon: "🎓"
     };
 
-    if (!newItem.name || !newItem.amount || !newItem.deadline || !newItem.link) {
-        showToast("Please fill all the fields correctly");
+    const validatedLink = safeExternalURL(newItem.link);
+
+    if (!newItem.name || !Number.isFinite(newItem.amount) || newItem.amount <= 0 ||
+        !newItem.deadline || !validatedLink) {
+        showToast("Enter a name, valid amount, deadline and secure HTTPS scholarship link.");
         return;
     }
 
+    newItem.link = validatedLink;
     scholarships.push(newItem);
     saveAdminScholarships();
 

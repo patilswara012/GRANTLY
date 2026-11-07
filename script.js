@@ -81,9 +81,19 @@ const scholarships = [
     }
 ];
 
-let saved = JSON.parse(localStorage.getItem("grantlySaved")) || [];
-let applications = JSON.parse(localStorage.getItem("grantlyApplications")) || [];
-let documents = JSON.parse(localStorage.getItem("grantlyDocuments")) || {};
+function readStoredJSON(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch (error) {
+        console.warn(`GRANTLY could not read stored data for ${key}.`, error);
+        return fallback;
+    }
+}
+
+let saved = readStoredJSON("grantlySaved", []);
+let applications = readStoredJSON("grantlyApplications", []);
+let documents = readStoredJSON("grantlyDocuments", {});
 let userName = localStorage.getItem("grantlyName") || "";
 
 const documentNames = [
@@ -94,10 +104,21 @@ const documentNames = [
     "Bank Account Details"
 ];
 
+function safeStore(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+    } catch (error) {
+        console.error(`GRANTLY could not save ${key}.`, error);
+        showToast("Browser storage is unavailable. Your latest change may not be saved.");
+        return false;
+    }
+}
+
 function saveData() {
-    localStorage.setItem("grantlySaved", JSON.stringify(saved));
-    localStorage.setItem("grantlyApplications", JSON.stringify(applications));
-    localStorage.setItem("grantlyDocuments", JSON.stringify(documents));
+    safeStore("grantlySaved", saved);
+    safeStore("grantlyApplications", applications);
+    safeStore("grantlyDocuments", documents);
 }
 
 function showToast(message) {
@@ -119,10 +140,13 @@ function showPage(pageId) {
 
     const page = document.getElementById(pageId);
 
-    if (page) {
-        page.classList.add("active");
+    if (!page || !page.classList.contains("page")) {
+        document.getElementById("home")?.classList.add("active");
+        showToast("That page could not be opened. Returning to Home.");
+        return;
     }
 
+    page.classList.add("active");
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     if (pageId === "explore") renderScholarships();
@@ -409,6 +433,8 @@ function updateDocument(index, checked) {
 
 function renderDashboard() {
     const savedItems = scholarships.filter(item => saved.includes(item.id));
+    const heading = document.querySelector(".dashboard-header h1");
+    if (heading) heading.textContent = userName ? `Welcome, ${userName}` : "Student Dashboard";
 
     document.getElementById("savedCount").textContent = saved.length;
     document.getElementById("applicationCount").textContent = applications.length;
@@ -453,14 +479,20 @@ document.getElementById("eligibilityForm").addEventListener("submit", function(e
     const income = Number(document.getElementById("income").value);
     const category = document.getElementById("studentCategory").value;
 
+    if (!level || !course.trim() || !category ||
+        !Number.isFinite(marks) || marks < 0 || marks > 100 ||
+        !Number.isFinite(income) || income < 0) {
+        showToast("Please enter valid details. Marks must be 0–100 and income cannot be negative.");
+        return;
+    }
+
     const results = scholarships.map(item => {
-        let score = 0;
+        const levelPoints = level === item.level ? 40 : 0;
+        const marksPoints = marks >= item.marks ? 35 : 0;
+        const incomePoints = income <= item.income ? 25 : 0;
+        const score = levelPoints + marksPoints + incomePoints;
 
-        if (level === item.level) score += 40;
-        if (marks >= item.marks) score += 35;
-        if (income <= item.income) score += 25;
-
-        return { ...item, score };
+        return { ...item, score, levelPoints, marksPoints, incomePoints };
     }).sort((a, b) => b.score - a.score);
 
     const container = document.getElementById("eligibilityResults");
@@ -474,11 +506,14 @@ document.getElementById("eligibilityForm").addEventListener("submit", function(e
                 <strong>${item.score}% profile match</strong>
                 <p>${escapeHTML(item.name)}</p>
                 <p class="muted">
-                    ${item.score >= 75
-                        ? "Strong match based on the limited sample criteria."
+                    Education level: ${item.levelPoints}/40 · Marks: ${item.marksPoints}/35 · Income: ${item.incomePoints}/25
+                </p>
+                <p class="muted">
+                    ${item.score === 100
+                        ? "Meets all three sample checks shown above."
                         : item.score >= 50
-                            ? "Partial match. Check all official conditions."
-                            : "Low match based on the sample criteria."}
+                            ? "Meets some sample checks. Review the missing criteria."
+                            : "Does not meet most of the sample checks."}
                 </p>
                 <button class="text-button" onclick="viewDetails(${item.id})">
                     View details →
@@ -500,13 +535,24 @@ document.getElementById("registerForm").addEventListener("submit", function(even
     const name = document.getElementById("registerName").value.trim();
     const email = document.getElementById("registerEmail").value.trim();
 
-    if (!name || !email) return;
+    const password = document.getElementById("registerPassword").value;
+
+    if (name.length < 2 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || password.length < 6) {
+        showToast("Enter a valid name, email and password of at least 6 characters.");
+        return;
+    }
 
     userName = name;
-    localStorage.setItem("grantlyName", name);
-    localStorage.setItem("grantlyEmail", email);
+    try {
+        localStorage.setItem("grantlyName", name);
+        localStorage.setItem("grantlyEmail", email);
+    } catch (error) {
+        showToast("Browser storage is unavailable. Profile could not be saved.");
+        return;
+    }
 
-    showToast("Demo profile created!");
+    this.reset();
+    showToast("Demo profile created in this browser.");
     showPage("dashboard");
 });
 
@@ -515,11 +561,18 @@ document.getElementById("loginForm").addEventListener("submit", function(event) 
     event.preventDefault();
 
     const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
 
-    if (!email) return;
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || !password) {
+        showToast("Enter a valid email address and password to continue.");
+        return;
+    }
 
+    // This is intentionally a demo gate, not real authentication.
+    // Passwords are never stored or compared by this frontend-only version.
     userName = localStorage.getItem("grantlyName") || "Student";
-    showToast("Demo login successful!");
+    this.reset();
+    showToast("Demo access opened. This is not a verified account login.");
     showPage("dashboard");
 });
 
@@ -610,10 +663,7 @@ document.getElementById("adminForm").addEventListener("submit", function(event) 
 });
 
 function saveAdminScholarships() {
-    localStorage.setItem(
-        "grantlyAdminScholarships",
-        JSON.stringify(scholarships)
-    );
+    safeStore("grantlyAdminScholarships", scholarships);
 }
 
 function renderAdmin() {
@@ -646,7 +696,7 @@ function deleteScholarship(id) {
 }
 
 // Load admin-added records from localStorage
-const adminRecords = JSON.parse(localStorage.getItem("grantlyAdminScholarships")) || [];
+const adminRecords = readStoredJSON("grantlyAdminScholarships", []);
 
 adminRecords.forEach(item => {
     if (!scholarships.some(existing => existing.id === item.id)) {

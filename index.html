@@ -9,28 +9,11 @@
     <meta property="og:title" content="GRANTLY">
     <meta property="og:description" content="Discover scholarships, check eligibility and track your scholarship journey with GRANTLY.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://grantly.example">
-    <meta property="og:image" content="https://grantly.example/og-image.png">
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "GRANTLY",
-      "description": "Student scholarship discovery platform",
-      "url": "https://grantly.example",
-      "logo": "https://grantly.example/logo.png",
-      "sameAs": [
-        "https://twitter.com/grantly",
-        "https://facebook.com/grantly"
-      ]
-    }
-    </script>
-    
-    <title>GRANTLY | Find Your Future</title>
+<title>GRANTLY | Find Your Future</title>
     <link rel="stylesheet" href="new 1.css">
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
 
     <header class="navbar" role="banner">
         <a href="#" class="logo" onclick="showPage('home')">
@@ -226,7 +209,7 @@
 
             <div class="form-card">
                 <h2>Your academic profile</h2>
-                <p class="muted">This demo uses the details you enter only in your browser.</p>
+                <p class="muted">Demo matching only. Your profile is processed in this browser; results are not official eligibility decisions.</p>
 
                 <form id="eligibilityForm" novalidate>
                     <fieldset>
@@ -391,7 +374,7 @@
                     </fieldset>
                 </form>
                 <p class="auth-switch">New here? <a href="#" onclick="showPage('register')">Create an account</a></p>
-                <p class="demo-note">Demo login only. This does not create secure accounts.</p>
+                <p class="demo-note">Demo mode: this page does not verify accounts. Do not enter a real password or sensitive information.</p>
             </div>
         </section>
 
@@ -434,7 +417,7 @@
                     </fieldset>
                 </form>
                 <p class="auth-switch">Already registered? <a href="#" onclick="showPage('login')">Login</a></p>
-                <p class="demo-note">Demo registration only. Do not use a real password.</p>
+                <p class="demo-note">Demo profile only: your name and email are saved in this browser. No secure account is created. Do not use a real password.</p>
             </div>
         </section>
 
@@ -575,7 +558,7 @@
             <nav>
                 <h4>Information</h4>
                 <a href="#" onclick="showPage('about')">About us</a>
-                <a href="mailto:support@grantly.example">Contact</a>
+                <span class="muted">Contact details coming soon</span>
                 <a href="#" onclick="showPage('admin')">Demo admin</a>
             </nav>
         </div>
